@@ -8,6 +8,9 @@
 <body>
     <h1>Your Profile</h1>
     <div id="profileContainer"></div>
+    <input type="file" id="profileImageInput" accept="image/*">
+    <input type="text" id="descriptionInput" placeholder="Enter a brief description about yourself">
+    <button id="saveProfileBtn">Save Profile</button>
     <script>
         document.addEventListener("DOMContentLoaded", async () => {
             const token = localStorage.getItem('token');
@@ -21,7 +24,8 @@
             if (data.status === "success") {
                 document.getElementById("profileContainer").innerHTML = `
                     <h2>Welcome, ${data.user.name}</h2>
-                    <p>Email: ${data.user.email}</p>
+                    <img id="profileImage" src="${data.user.profileImage || ''}" alt="Profile Image" style="max-width: 200px; max-height: 200px;">
+                    <p id="descriptionText">${data.user.description || 'No description provided'}</p>
                     <button id="logoutBtn">Logout</button>
                 `;
     
@@ -32,6 +36,41 @@
             } else {
                 alert(data.message);
                 window.location.href = "login.html";
+            }
+        });
+
+        document.getElementById("saveProfileBtn").addEventListener("click", async () => {
+            const token = localStorage.getItem('token');
+            if (!token) return window.location.href = "login.html";
+    
+            const fileInput = document.getElementById('profileImageInput');
+            const description = document.getElementById('descriptionInput').value;
+    
+            const formData = new FormData();
+            if (fileInput.files[0]) {
+                formData.append('profileImage', fileInput.files[0]);
+            }
+            formData.append('description', description);
+    
+            try {
+                const response = await fetch('https://shelfshare-final.herokuapp.com/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': token
+                    },
+                    body: formData
+                });
+    
+                const data = await response.json();
+                if (data.status === "success") {
+                    alert('Profile updated successfully');
+                    window.location.reload();
+                } else {
+                    alert(data.message);
+                }
+            } catch (err) {
+                console.error('Error updating profile:', err);
+                alert('An error occurred while updating your profile. Please try again later.');
             }
         });
     </script>    

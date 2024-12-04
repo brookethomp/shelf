@@ -17,11 +17,15 @@ app.use(express.json());
 
 // Use CORS middleware with specific options to handle preflight requests
 app.use(cors({
-    origin: ['http://localhost:4000', 'https://shelfshare-final.herokuapp.com'],
+    origin: ['http://localhost:4000', 'https://shelfshare-final.herokuapp.com'], // Add your allowed origins here
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true // Allows cookies or Authorization headers to be sent
+    credentials: true
 }));
+
+app.options('*', cors());
+
+
 
 // Serve static files from the 'public' directory
 app.use(express.static('public'));
@@ -80,6 +84,34 @@ app.post('/login', async (req, res) => {
     }
 });
 
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/' }); // Configure as per your needs
+
+app.put('/profile', authenticate, upload.single('profileImage'), async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        let updateData = {};
+
+        // Handle file upload
+        if (req.file) {
+            updateData.profileImage = `/uploads/${req.file.filename}`;
+        }
+
+        // Update description
+        if (req.body.description) {
+            updateData.description = req.body.description;
+        }
+
+        await User.findByIdAndUpdate(userId, updateData);
+
+        res.json({ status: 'success', message: 'Profile updated successfully' });
+    } catch (err) {
+        console.error('Error updating profile:', err);
+        res.status(500).json({ status: 'error', message: 'Server error' });
+    }
+});
+
 // Profile Endpoint
 app.get('/profile', authenticate, async (req, res) => {
     try {
@@ -121,6 +153,22 @@ app.post('/register', async (req, res) => {
 app.get('/login', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
+
+app.get('/admin/users', authenticate, async (req, res) => {
+    // Ensure this route is accessed by an admin only
+    if (!req.user.isAdmin) {
+        return res.status(403).json({ status: 'error', message: 'Access forbidden' });
+    }
+
+    try {
+        const users = await User.find({}, 'email'); // Fetch all users, showing only emails
+        res.json({ status: 'success', users });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ status: 'error', message: 'Server error' });
+    }
+});
+
 
 // Start Server
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
