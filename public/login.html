@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShelfShare - Login</title>
+</head>
+<body>
+    <h1>Login to ShelfShare</h1>
+    <div id="message"></div>
+    <form id="loginForm">
+        <label for="email">Email:</label>
+        <input type="email" id="email" required><br><br>
+        <label for="password">Password:</label>
+        <input type="password" id="password" required><br><br>
+        <button type="submit">Login</button>
+    </form>
+
+    <script>
+        document.getElementById("loginForm").addEventListener("submit", async (event) => {
+            event.preventDefault(); // Prevent form from submitting the default way
+
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (data.status === "success") {
+                    // Store the JWT token and redirect to profile
+                    localStorage.setItem('token', data.token);
+                    window.location.href = "/profile.html";
+                } else {
+                    // Show error message if login failed
+                    document.getElementById("message").innerText = data.message;
+                    document.getElementById("message").style.color = "red";
+                }
+            } catch (err) {
+                console.error('Error during login:', err);
+                document.getElementById("message").innerText = "An error occurred. Please try again later.";
+                document.getElementById("message").style.color = "red";
+            }
+        });
+    </script>
+</body>
+</html>
